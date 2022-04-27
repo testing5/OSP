@@ -174,6 +174,7 @@ export class OpenSeaPort {
     apiConfig: OpenSeaAPIConfig = {},
     logger?: (arg: string) => void
   ) {
+    BigNumber.config({EXPONENTIAL_AT: [0, 2560]})
     // API config
     apiConfig.networkName = apiConfig.networkName || Network.Main;
     this.api = new OpenSeaAPI(apiConfig);
