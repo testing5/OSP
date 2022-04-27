@@ -4495,4 +4495,133 @@ export class OpenSeaPort {
       from: accountAddress,
     });
   }
+
+
+  /**
+   * Fullfill or "take" an order for an asset, either a buy or sell order
+   * @param param0 __namedParamaters Object
+   * @param order The order to fulfill, a.k.a. "take"
+   * @param accountAddress The taker's wallet address
+   * @param recipientAddress The optional address to receive the order's item(s) or curriencies. If not specified, defaults to accountAddress.
+   * @param referrerAddress The optional address that referred the order
+   * @returns Transaction hash for fulfilling the order
+   */
+  public populate_fulfillOrder({
+    order,
+    accountAddress,
+    recipientAddress,
+    referrerAddress,
+  }: {
+    order: Order;
+    accountAddress: string;
+    recipientAddress?: string;
+    referrerAddress?: string;
+  }): string {
+    const matchingOrder = this._makeMatchingOrder({
+      order,
+      accountAddress,
+      recipientAddress: recipientAddress || accountAddress,
+    });
+
+    const { buy, sell } = assignOrdersToSides(order, matchingOrder);
+
+    const metadata = this._getMetadata(order, referrerAddress);
+    const text = this.populate_atomicMatch({
+      buy,
+      sell,
+      metadata,
+    });
+
+    return text;
+  }
+
+
+//
+  private populate_atomicMatch({
+    buy,
+    sell,
+    metadata = NULL_BLOCK_HASH,
+  }: {
+    buy: Order;
+    sell: Order;
+    metadata?: string;
+  }) {
+    const args: WyvernAtomicMatchParameters = [
+      [
+        buy.exchange,
+        buy.maker,
+        buy.taker,
+        buy.feeRecipient,
+        buy.target,
+        buy.staticTarget,
+        buy.paymentToken,
+        sell.exchange,
+        sell.maker,
+        sell.taker,
+        sell.feeRecipient,
+        sell.target,
+        sell.staticTarget,
+        sell.paymentToken,
+      ],
+      [
+        buy.makerRelayerFee,
+        buy.takerRelayerFee,
+        buy.makerProtocolFee,
+        buy.takerProtocolFee,
+        buy.basePrice,
+        buy.extra,
+        buy.listingTime,
+        buy.expirationTime,
+        buy.salt,
+        sell.makerRelayerFee,
+        sell.takerRelayerFee,
+        sell.makerProtocolFee,
+        sell.takerProtocolFee,
+        sell.basePrice,
+        sell.extra,
+        sell.listingTime,
+        sell.expirationTime,
+        sell.salt,
+      ],
+      [
+        buy.feeMethod,
+        buy.side,
+        buy.saleKind,
+        buy.howToCall,
+        sell.feeMethod,
+        sell.side,
+        sell.saleKind,
+        sell.howToCall,
+      ],
+      buy.calldata,
+      sell.calldata,
+      buy.replacementPattern,
+      sell.replacementPattern,
+      buy.staticExtradata,
+      sell.staticExtradata,
+      [buy.v || 0, sell.v || 0],
+      [
+        buy.r || NULL_BLOCK_HASH,
+        buy.s || NULL_BLOCK_HASH,
+        sell.r || NULL_BLOCK_HASH,
+        sell.s || NULL_BLOCK_HASH,
+        metadata,
+      ],
+    ];
+
+    return JSON.stringify([
+      args[0],
+      args[1],
+      args[2],
+      args[3],
+      args[4],
+      args[5],
+      args[6],
+      args[7],
+      args[8],
+      args[9],
+      args[10],
+    ]);
+  }
+
 }
